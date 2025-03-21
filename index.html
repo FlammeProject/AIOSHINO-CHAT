@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI OSHINO Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        #chatContainer { display: none; }
+        #messages { width: 80%; height: 300px; overflow-y: scroll; border: 1px solid #ccc; margin: 10px auto; padding: 10px; }
+        input, button { padding: 10px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h2>Bienvenue sur le chat de AI OSHINO</h2>
+    <p>Entrez votre "callsign" (pseudo) pour accéder au chat (max 10 caractères).</p>
+    <input type="text" id="callsign" maxlength="10" placeholder="Votre callsign">
+    <button onclick="enterChat()">Entrer</button>
+    
+    <div id="chatContainer">
+        <h3>Tutoriel :</h3>
+        <p>Vous pouvez envoyer des messages normalement ou entrer une fréquence sous la forme "freq:XXXX" (uniquement des chiffres) pour générer un lien d'écoute.</p>
+        <div id="messages"></div>
+        <input type="text" id="message" maxlength="200" placeholder="Écrivez un message...">
+        <button onclick="sendMessage()">Envoyer</button>
+    </div>
+
+    <script>
+        let callsign = "";
+        function enterChat() {
+            const input = document.getElementById("callsign").value.trim();
+            if (input.length > 0 && input.length <= 10) {
+                callsign = input;
+                document.getElementById("chatContainer").style.display = "block";
+                document.getElementById("callsign").disabled = true;
+            } else {
+                alert("Votre callsign doit contenir entre 1 et 10 caractères.");
+            }
+        }
+
+        function sendMessage() {
+            let message = document.getElementById("message").value.trim();
+            if (message.length === 0 || message.length > 200) {
+                alert("Votre message doit contenir entre 1 et 200 caractères.");
+                return;
+            }
+            
+            if (message.startsWith("freq:")) {
+                let freq = message.split(":")[1];
+                if (/^\d+$/.test(freq)) {
+                    message = `<a href='http://sdr.aioshino.xyz:8073/#freq=${freq},mod=nfm' target='_blank'>Écouter ${freq} MHz</a>`;
+                }
+            }
+            
+            let formattedMessage = `<p><strong>${callsign}:</strong> ${message}</p>`;
+            document.getElementById("messages").innerHTML += formattedMessage;
+            saveMessage(`${callsign}: ${message}`);
+            document.getElementById("message").value = "";
+        }
+        
+        function saveMessage(msg) {
+            const blob = new Blob([msg + "\n"], { type: 'text/plain' });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "chat_log.txt";
+            a.style.display = "none";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
