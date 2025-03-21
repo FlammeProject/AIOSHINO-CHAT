@@ -4,35 +4,126 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI OSHINO Chat</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #121212;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
         #chatContainer { display: none; }
-        #messages { width: 80%; height: 300px; overflow-y: scroll; border: 1px solid #ccc; margin: 10px auto; padding: 10px; }
-        input, button { padding: 10px; margin: 5px; }
+        #callsignContainer { display: block; }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            max-width: 1200px;
+        }
+        .sidebar {
+            width: 25%;
+            background: #1e1e1e;
+            padding: 10px;
+            border: 1px solid #444;
+        }
+        #chatBox {
+            width: 50%;
+            text-align: center;
+        }
+        #messages {
+            width: 100%;
+            height: 300px;
+            overflow-y: scroll;
+            border: 1px solid #444;
+            margin: 10px auto;
+            padding: 10px;
+            text-align: left;
+            background-color: #1e1e1e;
+            color: white;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            background-color: #333;
+            color: white;
+            border: 1px solid #555;
+        }
+        button:hover {
+            background-color: #444;
+        }
+        a { color: #4db8ff; }
+        .info-box {
+            background: #1e1e1e;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #444;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
     <h2>Bienvenue sur le chat de AI OSHINO</h2>
-    <p>Entrez votre "callsign" (pseudo) pour accéder au chat (max 10 caractères).</p>
-    <input type="text" id="callsign" maxlength="10" placeholder="Votre callsign">
-    <button onclick="enterChat()">Entrer</button>
+    <div id="callsignContainer">
+        <p>Entrez votre "callsign" (pseudo) pour accéder au chat (max 10 caractères).</p>
+        <input type="text" id="callsign" maxlength="10" placeholder="Votre callsign">
+        <button onclick="enterChat()">Entrer</button>
+    </div>
     
-    <div id="chatContainer">
-        <h3>Tutoriel :</h3>
-        <p>Vous pouvez envoyer des messages normalement ou entrer une fréquence sous la forme "freq:XXXX" (uniquement des chiffres) pour générer un lien d'écoute.</p>
-        <div id="messages"></div>
-        <input type="text" id="message" maxlength="200" placeholder="Écrivez un message...">
-        <button onclick="sendMessage()">Envoyer</button>
+    <div class="container">
+        <div class="sidebar" id="leftSidebar">
+            <h3>Statut</h3>
+            <div class="info-box">
+                <p>Ping Chat: <span id="pingChat">...</span> ms</p>
+                <p>Ping SDR: <span id="pingSDR">...</span> ms</p>
+                <p>Ping Firebase: <span id="pingFirebase">...</span> ms</p>
+            </div>
+            <h3>Météo</h3>
+            <div class="info-box" id="weatherBox">
+                <p id="weather">Chargement...</p>
+            </div>
+        </div>
+        
+        <div id="chatBox">
+            <div id="chatContainer">
+                <h3>Tutoriel :</h3>
+                <p>Vous pouvez envoyer des messages normalement ou entrer une fréquence sous la forme "freq:XXXX" pour générer un lien d'écoute.</p>
+                <div id="messages"></div>
+                <input type="text" id="message" maxlength="200" placeholder="Écrivez un message..." onkeypress="handleKeyPress(event)">
+                <button onclick="sendMessage()">Envoyer</button>
+            </div>
+        </div>
+        
+        <div class="sidebar" id="rightSidebar">
+            <h3>Satellites NOAA</h3>
+            <div class="info-box" id="noaaBox">
+                <p id="noaaData">Chargement...</p>
+            </div>
+            <h3>Activité Solaire</h3>
+            <center>
+                <a href="https://www.hamqsl.com/solar.html" title="Click to add Solar-Terrestrial Data to your website!"><img src="https://www.hamqsl.com/solarn0nbh.php"></a>
+            </center>
+        </div>
     </div>
 
     <script>
+        const firebaseConfig = {
+            databaseURL: "https://compteur-ad33c-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
         let callsign = "";
+
         function enterChat() {
             const input = document.getElementById("callsign").value.trim();
             if (input.length > 0 && input.length <= 10) {
                 callsign = input;
+                document.getElementById("callsignContainer").style.display = "none";
                 document.getElementById("chatContainer").style.display = "block";
-                document.getElementById("callsign").disabled = true;
+                loadMessages();
             } else {
                 alert("Votre callsign doit contenir entre 1 et 10 caractères.");
             }
@@ -40,34 +131,85 @@
 
         function sendMessage() {
             let message = document.getElementById("message").value.trim();
-            if (message.length === 0 || message.length > 200) {
-                alert("Votre message doit contenir entre 1 et 200 caractères.");
-                return;
-            }
-            
-            if (message.startsWith("freq:")) {
-                let freq = message.split(":")[1];
-                if (/^\d+$/.test(freq)) {
-                    message = `<a href='http://sdr.aioshino.xyz:8073/#freq=${freq},mod=nfm' target='_blank'>Écouter ${freq} MHz</a>`;
-                }
-            }
-            
-            let formattedMessage = `<p><strong>${callsign}:</strong> ${message}</p>`;
-            document.getElementById("messages").innerHTML += formattedMessage;
-            saveMessage(`${callsign}: ${message}`);
+            if (message.length === 0 || message.length > 200) return;
+            message = message.replace(/freq:(\d+)/g, `<a href='https://sdr.aioshino.xyz:8073/#freq=$1,mod=nfm' target='_blank'>Écouter $1 MHz</a>`);
+            db.ref("messages").push({ callsign, message });
             document.getElementById("message").value = "";
         }
-        
-        function saveMessage(msg) {
-            const blob = new Blob([msg + "\n"], { type: 'text/plain' });
-            const a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = "chat_log.txt";
-            a.style.display = "none";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+
+        function loadMessages() {
+            db.ref("messages").on("value", (snapshot) => {
+                const messagesDiv = document.getElementById("messages");
+                messagesDiv.innerHTML = "";
+                snapshot.forEach((childSnapshot) => {
+                    const msg = childSnapshot.val();
+                    messagesDiv.innerHTML += `<p><strong>${msg.callsign}:</strong> ${msg.message}</p>`;
+                });
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            });
         }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") sendMessage();
+        }
+
+        function updatePing() {
+            const firebaseStart = performance.now();
+            fetch('https://compteur-ad33c-default-rtdb.europe-west1.firebasedatabase.app/.json')
+                .then(() => {
+                    const firebaseEnd = performance.now();
+                    document.getElementById("pingFirebase").textContent = (firebaseEnd - firebaseStart).toFixed(2);
+                });
+
+            const sdrStart = performance.now();
+            fetch('http://sdr.aioshino.xyz:8073')
+                .then(() => {
+                    const sdrEnd = performance.now();
+                    document.getElementById("pingSDR").textContent = (sdrEnd - sdrStart).toFixed(2);
+                });
+
+            const chatLoadTime = window.performance.timing.domContentLoadedEventEnd - window.performance.timing.navigationStart;
+            document.getElementById("pingChat").textContent = chatLoadTime.toFixed(2);
+        }
+
+        window.addEventListener('load', updatePing);
+
+        function updateWeather() {
+            fetch('https://www.metaweather.com/api/location/44418/') // Using London as an example
+                .then(response => response.json())
+                .then(data => {
+                    const weatherBox = document.getElementById("weatherBox");
+                    const weather = data.consolidated_weather[0];
+                    weatherBox.innerHTML = `
+                        <p>Température: ${weather.the_temp.toFixed(1)}°C</p>
+                        <p>Vent: ${weather.wind_speed.toFixed(1)} km/h</p>
+                        <p>Météo: ${weather.weather_state_name}</p>
+                    `;
+                })
+                .catch(error => {
+                    console.error('Error fetching weather data:', error);
+                    document.getElementById("weatherBox").innerHTML = "<p>Erreur de chargement des données météo.</p>";
+                });
+        }
+
+        function updateSatellites() {
+            fetch('https://api.n2yo.com/rest/v1/satellite/above/48.1173/-1.6778/0/70/18/&apiKey=AQWHMQ-QZYH3W-ELEN45-5FUI')
+                .then(response => response.json())
+                .then(data => {
+                    const noaaBox = document.getElementById("noaaBox");
+                    noaaBox.innerHTML = data.above.map(sat => `
+                        <p>${sat.satname}: ${sat.sataltitude} km</p>
+                    `).join('');
+                })
+                .catch(error => {
+                    console.error('Error fetching satellite data:', error);
+                    document.getElementById("noaaBox").innerHTML = "<p>Erreur de chargement des données satellites.</p>";
+                });
+        }
+
+        setInterval(updateWeather, 30000);
+        setInterval(updateSatellites, 30000);
+        setInterval(updatePing, 30000);
     </script>
 </body>
 </html>
