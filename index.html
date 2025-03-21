@@ -3,47 +3,55 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="description" content="Chat & centre de monitoring RADIO AI OSHINO !!!! :3 ૮ ˶ᵔ ᵕ ᵔ˶ ა 𐙚">
+    <link rel="icon" href="favicon.ico" type="ico">
     <title>AI OSHINO Chat</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
             background-color: #121212;
             color: white;
             display: flex;
             flex-direction: column;
             align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
         }
         #chatContainer { display: none; }
         #callsignContainer { display: block; }
         .container {
             display: flex;
-            justify-content: space-between;
-            width: 90%;
-            max-width: 1200px;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
         }
-        .sidebar {
-            width: 25%;
+        .sidebar, .gif-sidebar {
+            flex: 1;
             background: #1e1e1e;
             padding: 10px;
             border: 1px solid #444;
+            overflow: hidden;
         }
         #chatBox {
-            width: 50%;
-            text-align: center;
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 100%;
         }
         #messages {
-            width: 100%;
-            height: 300px;
-            overflow-y: scroll;
+            flex: 1;
+            overflow: hidden;
             border: 1px solid #444;
-            margin: 10px auto;
+            margin: 10px 0;
             padding: 10px;
-            text-align: left;
             background-color: #1e1e1e;
             color: white;
+            text-align: left;
         }
         input, button {
             padding: 10px;
@@ -63,10 +71,60 @@
             border: 1px solid #444;
             text-align: left;
         }
+        .gif-sidebar img {
+            width: 100%;
+            margin-bottom: 10px;
+            border: 1px solid #444;
+        }
+        .gif-sidebar img.small {
+            width: 80%;
+        }
+        .gif-sidebar img.large {
+            width: 120%;
+        }
+        .solar-activity {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .solar-activity img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+            }
+            .sidebar, .gif-sidebar {
+                flex: 1;
+            }
+            #chatBox {
+                flex: 3;
+            }
+        }
+        @media (max-width: 767px) {
+            .container {
+                flex-direction: column;
+            }
+            .sidebar, .gif-sidebar {
+                display: none;
+            }
+            #chatBox {
+                flex: 1;
+            }
+            #messages {
+                flex: 1;
+                overflow-y: auto;
+            }
+            input, button {
+                width: calc(100% - 20px);
+            }
+        }
     </style>
 </head>
 <body>
-    <h2>Bienvenue sur le chat de AI OSHINO</h2>
+    <h2>Bienvenue sur le chat AI OSHINO</h2>
     <div id="callsignContainer">
         <p>Entrez votre "callsign" (pseudo) pour accéder au chat (max 10 caractères).</p>
         <input type="text" id="callsign" maxlength="10" placeholder="Votre callsign">
@@ -74,6 +132,14 @@
     </div>
     
     <div class="container">
+        <div class="gif-sidebar" id="leftGifSidebar">
+            <img src="https://media1.tenor.com/m/kwua3gMiSXEAAAAd/kurumi-tokisaki-date-a-live.gif" alt="Anime GIF 1" class="small">
+            <img src="https://media1.tenor.com/m/P7hCyZlzDH4AAAAd/wink-anime.gif" alt="Anime GIF 2">
+            <img src="https://media.tenor.com/o4aOknzsgTIAAAAj/oki.gif" alt="Anime GIF 3" class="large">
+            <img src="https://media1.tenor.com/m/X51YpCwWbBIAAAAd/konata-brain-less.gif" alt="Anime GIF 4">
+            <img src="https://media1.tenor.com/m/kfXicpYoZMAAAAAd/anime-lily.gif" alt="Anime GIF 5" class="small">
+            <img src="https://media.tenor.com/V-frb4Y_9iQAAAAj/admincorno-ditf.gif" alt="Anime GIF 6" class="large">
+        </div>
         <div class="sidebar" id="leftSidebar">
             <h3>Statut</h3>
             <div class="info-box">
@@ -89,8 +155,17 @@
         
         <div id="chatBox">
             <div id="chatContainer">
-                <h3>Tutoriel :</h3>
-                <p>Vous pouvez envoyer des messages normalement ou entrer une fréquence sous la forme "freq:XXXX" pour générer un lien d'écoute.</p>
+                <h3>Infos :</h3>
+                <p>Vous pouvez envoyer des messages comme dans un chat normal avec une limite de 200chr, vous pouvez généré un lien de partage d'écoute pour la radio en incluant  "freq:FREQUENCE ICI" avec les guillemets dans votre message, example : "Voici le lien pour le Broadcast de kik : "freq:29385"</p>
+                <button onclick="toggleLinks()">Liens Utiles</button>
+                <div id="usefulLinks" style="display: none;">
+                    <ul>
+                        <li><a href="http://sdr.aioshino.xyz:8073" target="_blank">SDR</a></li>
+                        <li><a href="http://sdr.aioshino.xyz:8073/#freq=29385000,mod=nfm,sql=-150" target="_blank">Kik Broadcast</a></li>
+                        <li><a href="https://discord.gg/N2QqVzqaY2" target="_blank">Discord</a></li>
+                        <li><a href="https://kittychan.xyz" target="_blank">Kittychan</a></li>
+                    </ul>
+                </div>
                 <div id="messages"></div>
                 <input type="text" id="message" maxlength="200" placeholder="Écrivez un message..." onkeypress="handleKeyPress(event)">
                 <button onclick="sendMessage()">Envoyer</button>
@@ -103,9 +178,19 @@
                 <p id="noaaData">Chargement...</p>
             </div>
             <h3>Activité Solaire</h3>
-            <center>
-                <a href="https://www.hamqsl.com/solar.html" title="Click to add Solar-Terrestrial Data to your website!"><img src="https://www.hamqsl.com/solarn0nbh.php"></a>
-            </center>
+            <div class="solar-activity">
+                <a href="https://www.hamqsl.com/solar.html" title="Click to add Solar-Terrestrial Data to your website!">
+                    <img src="https://www.hamqsl.com/solarn0nbh.php">
+                </a>
+            </div>
+        </div>
+        <div class="gif-sidebar" id="rightGifSidebar">
+            <img src="https://media1.tenor.com/m/S76lurElibYAAAAd/tohru-maid-dragon.gif" alt="Anime GIF 7" class="large">
+            <img src="https://media1.tenor.com/m/K4PmOJXzhQ8AAAAd/yui-hirasawa-anime-girl.gif" alt="Anime GIF 8">
+            <img src="https://media1.tenor.com/m/Fkht-EVorQYAAAAd/chika.gif" alt="Anime GIF 9" class="small">
+            <img src="https://media1.tenor.com/m/enB0HSXVGcUAAAAd/anime-blush.gif" alt="Anime GIF 10">
+            <img src="https://media1.tenor.com/m/bODhDe1u03AAAAAd/lena-86eighty-six.gif" alt="Anime GIF 11" class="large">
+            <img src="https://media1.tenor.com/m/lIzs_Bo-dYMAAAAd/500-karma-karma-gain.gif" alt="Anime GIF 12" class="small">
         </div>
     </div>
 
@@ -162,10 +247,18 @@
                 });
 
             const sdrStart = performance.now();
-            fetch('http://sdr.aioshino.xyz:8073')
+            fetch('https://sdr.aioshino.xyz:8073')
                 .then(() => {
                     const sdrEnd = performance.now();
                     document.getElementById("pingSDR").textContent = (sdrEnd - sdrStart).toFixed(2);
+                })
+                .catch((error) => {
+                    const sdrEnd = performance.now();
+                    if (error.message.includes('SSL certificate') || error.message.includes('net::ERR_SSL_PROTOCOL_ERROR')) {
+                        document.getElementById("pingSDR").textContent = (sdrEnd - sdrStart).toFixed(2);
+                    } else {
+                        document.getElementById("pingSDR").textContent = "Erreur de connexion";
+                    }
                 });
 
             const chatLoadTime = window.performance.timing.domContentLoadedEventEnd - window.performance.timing.navigationStart;
@@ -175,15 +268,15 @@
         window.addEventListener('load', updatePing);
 
         function updateWeather() {
-            fetch('https://www.metaweather.com/api/location/44418/') // Using London as an example
+            fetch('https://api.open-meteo.com/v1/forecast?latitude=48.1173&longitude=-1.6778&current_weather=true')
                 .then(response => response.json())
                 .then(data => {
                     const weatherBox = document.getElementById("weatherBox");
-                    const weather = data.consolidated_weather[0];
+                    const weather = data.current_weather;
                     weatherBox.innerHTML = `
-                        <p>Température: ${weather.the_temp.toFixed(1)}°C</p>
-                        <p>Vent: ${weather.wind_speed.toFixed(1)} km/h</p>
-                        <p>Météo: ${weather.weather_state_name}</p>
+                        <p>Température: ${weather.temperature}°C</p>
+                        <p>Vent: ${weather.windspeed} km/h</p>
+                        <p>Météo: ${weather.weathercode}</p>
                     `;
                 })
                 .catch(error => {
@@ -193,13 +286,37 @@
         }
 
         function updateSatellites() {
-            fetch('https://api.n2yo.com/rest/v1/satellite/above/48.1173/-1.6778/0/70/18/&apiKey=AQWHMQ-QZYH3W-ELEN45-5FUI')
-                .then(response => response.json())
+            const apiKey = 'AQWHMQ-QZYH3W-ELEN45-5FUI';
+            const url = `https://api.n2yo.com/rest/v1/satellite/above/48.1173/-1.6778/0/70/18/&apiKey=${apiKey}`;
+            const proxyUrl = 'https://api.allorigins.win/get?url=';
+
+            fetch(proxyUrl + encodeURIComponent(url))
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    const parsedData = JSON.parse(data.contents);
+                    if (!parsedData.above) {
+                        throw new Error('Invalid data format');
+                    }
                     const noaaBox = document.getElementById("noaaBox");
-                    noaaBox.innerHTML = data.above.map(sat => `
-                        <p>${sat.satname}: ${sat.sataltitude} km</p>
-                    `).join('');
+                    const noaaSatellites = parsedData.above.filter(sat => 
+                        sat.satname.includes('NOAA 18') || 
+                        sat.satname.includes('NOAA 19') || 
+                        sat.satname.includes('NOAA 15')
+                    );
+                    if (noaaSatellites.length === 0) {
+                        noaaBox.innerHTML = "<p>Aucun satellite NOAA trouvé.</p>";
+                    } else {
+                        noaaBox.innerHTML = noaaSatellites.map(sat => `
+                            <p>${sat.satname}: ${sat.sataltitude} km</p>
+                            <p>Latitude: ${sat.satlat}</p>
+                            <p>Longitude: ${sat.satlng}</p>
+                        `).join('');
+                    }
                 })
                 .catch(error => {
                     console.error('Error fetching satellite data:', error);
@@ -210,6 +327,15 @@
         setInterval(updateWeather, 30000);
         setInterval(updateSatellites, 30000);
         setInterval(updatePing, 30000);
+
+        function toggleLinks() {
+            const linksDiv = document.getElementById("usefulLinks");
+            if (linksDiv.style.display === "none") {
+                linksDiv.style.display = "block";
+            } else {
+                linksDiv.style.display = "none";
+            }
+        }
     </script>
 </body>
 </html>
